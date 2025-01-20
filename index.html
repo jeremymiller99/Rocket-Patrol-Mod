@@ -4,6 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rocket Patrol</title>
+    <style>
+        body {
+            background-color: beige;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        #gameContainer {
+            display: flex;
+            gap: 20px;
+        }
+        #leaderboard {
+            background-color: #F3B141;
+            color: #843605;
+            padding: 20px;
+            border-radius: 10px;
+            min-width: 200px;
+            font-family: Courier;
+        }
+        .score-entry {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+    </style>
     <script src="./lib/phaser.js"></script>
     <script src="./src/prefabs/Rocket.js"></script>
     <script src="./src/prefabs/Spaceship.js"></script>
@@ -12,11 +37,13 @@
     <script src="./src/main.js"></script>
 </head>
 <body>
-    <style>
-        body {
-            background-color: beige;
-        }
-    </style>
+    <div id="gameContainer">
+        <div id="game"></div>
+        <div id="leaderboard">
+            <h2>High Scores</h2>
+            <div id="scores"></div>
+        </div>
+    </div>
 </body>
 </html>
 

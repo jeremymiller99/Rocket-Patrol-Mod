@@ -55,16 +55,35 @@ class Play extends Phaser.Scene {
         this.clock = this.time.delayedCall(game.settings.gameTimer, () => {
             this.add.text(game.config.width/2, game.config.height/2, 'GAME OVER', scoreConfig).setOrigin(0.5)
             this.add.text(game.config.width/2, game.config.height/2 + 64, 'Press (R) to Restart or ← for Menu', scoreConfig).setOrigin(0.5)
+            this.add.text(game.config.width/2, game.config.height/2 + 128, 'Press (S) to Save Score', scoreConfig).setOrigin(0.5)
             this.gameOver = true
         }, null, this)
+
+        // Add S key for score saving
+        keySAVE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S)
+        
+        // Initialize name input state
+        this.enteringName = false
+        this.playerName = ''
+        this.scoreConfig = scoreConfig
     }
 
     update() {
-          // check key input for restart
+        // check key input for restart / menu
         if (this.gameOver && Phaser.Input.Keyboard.JustDown(keyLEFT)) {
             this.scene.start("menuScene")
         }
+        if (this.gameOver && Phaser.Input.Keyboard.JustDown(keyRESET)) {
+            this.scene.restart()
+        }
         
+        // check for score saving
+        if (this.gameOver && !this.enteringName && Phaser.Input.Keyboard.JustDown(keySAVE)) {
+            this.enteringName = true
+            this.nameText = this.add.text(game.config.width/2, game.config.height/2 + 160, 'Enter 5 letters: ', this.scoreConfig).setOrigin(0.5)
+            this.input.keyboard.on('keydown', this.handleNameInput, this)
+        }
+
         this.starfield.tilePositionX -= 4
 
         if(!this.gameOver) {
@@ -91,6 +110,54 @@ class Play extends Phaser.Scene {
                 this.shipExplode(this.ship01)
             }
         }  
+    }
+
+    handleNameInput(event) {
+        if (this.enteringName) {
+            if (/^[a-zA-Z0-9]$/.test(event.key) && this.playerName.length < 5) {
+                this.playerName += event.key.toUpperCase()
+                this.nameText.setText('Enter 5 letters: ' + this.playerName)
+            }
+            
+            if (this.playerName.length >= 5) {
+                this.enteringName = false
+                this.saveScore(this.playerName, this.p1Score)
+                this.input.keyboard.off('keydown', this.handleNameInput, this)
+                this.nameText.setText('Score Saved!')
+            }
+        }
+    }
+
+    saveScore(name, score) {
+        // Get existing scores from localStorage
+        let scores = JSON.parse(localStorage.getItem('highScores')) || []
+        
+        // Add new score
+        scores.push({ 
+            name, 
+            score,
+            difficulty: game.settings.spaceshipSpeed === 3 ? 'Easy' : 'Hard'
+        })
+        
+        // Sort scores (highest first)
+        scores.sort((a, b) => b.score - a.score)
+        
+        // Keep only top 10 scores
+        scores = scores.slice(0, 10)
+        
+        // Save back to localStorage
+        localStorage.setItem('highScores', JSON.stringify(scores))
+        
+        // Update the display
+        const scoresDiv = document.getElementById('scores')
+        scoresDiv.innerHTML = scores
+            .map((entry, index) => `
+                <div class="score-entry">
+                    ${index + 1}. ${entry.name} - ${entry.score}
+                    <br><small>${entry.difficulty} mode</small>
+                </div>
+            `)
+            .join('')
     }
 
     checkCollision(rocket, ship) {
@@ -122,5 +189,6 @@ class Play extends Phaser.Scene {
         this.scoreLeft.text = this.p1Score         
         // play sfx
         this.sound.play('sfx-explosion')
+        
     }
 }

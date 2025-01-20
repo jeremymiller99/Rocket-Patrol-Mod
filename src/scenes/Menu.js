@@ -41,7 +41,7 @@ class Menu extends Phaser.Scene {
             fixedWidth: 0
         }
 
-        this.add.text(game.config.width/2, game.config.height/2, 'Rocket Patrol', menuConfig).setOrigin(0.5)
+        this.add.text(game.config.width/2, game.config.height/2, 'ROCKET PATROL', menuConfig).setOrigin(0.5)
         this.add.text(game.config.width/2, game.config.height/2 + borderUISize, 'Use ←→ arrows to move & (F) to Fire', menuConfig).setOrigin(0.5)
 
         menuConfig.backgroundColor = '#00FF00'
@@ -51,27 +51,44 @@ class Menu extends Phaser.Scene {
         // define keys
         keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT)
         keyRIGHT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT)
+
+        // Initialize and display leaderboard
+        this.updateLeaderboard()
+    }
+    
+    updateLeaderboard() {
+        const scores = JSON.parse(localStorage.getItem('highScores')) || []
+        
+        // Update the display
+        const scoresDiv = document.getElementById('scores')
+        scoresDiv.innerHTML = scores
+            .map((entry, index) => `
+                <div class="score-entry">
+                    ${index + 1}. ${entry.name} - ${entry.score}
+                    <br><small>${entry.difficulty} mode</small>
+                </div>
+            `)
+            .join('')
     }
     
     update() {
         if (Phaser.Input.Keyboard.JustDown(keyLEFT)) {
-          // easy mode
-          game.settings = {
-            spaceshipSpeed: 3,
-            gameTimer: 60000    
-          }
-          this.sound.play('sfx-select')
-          this.scene.start('playScene')    
+            // easy mode
+            game.settings = {
+                spaceshipSpeed: 3,
+                gameTimer: 60000    
+            }
+            this.sound.play('sfx-select')
+            this.scene.start('playScene')    
         }
         if (Phaser.Input.Keyboard.JustDown(keyRIGHT)) {
-          // hard mode
-          game.settings = {
-            spaceshipSpeed: 4,
-            gameTimer: 45000    
-          }
-          this.sound.play('sfx-select')
-          this.scene.start('playScene')    
+            // hard mode
+            game.settings = {
+                spaceshipSpeed: 4,
+                gameTimer: 45000    
+            }
+            this.sound.play('sfx-select')
+            this.scene.start('playScene')    
         }
-      }
-
+    }
 }
