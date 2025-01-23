@@ -18,6 +18,12 @@ class Betting extends Phaser.Scene {
     }
 
     create() {
+        // Add both sound effects near the start of create()
+        this.selectSound = this.sound.add('sfx-select');
+        this.highlightSound = this.sound.add('sfx-select', { 
+            detune: -300  // Lower pitch by 300 cents (3 semitones)
+        });
+        
         // Define Y positions directly for easy adjustment
         const SPACING = {
             TOP_MARGIN: 120,           // Distance from top of screen
@@ -121,14 +127,17 @@ class Betting extends Phaser.Scene {
     handleWagerInput(event) {
         if(this.state === 'wager') {
             if(event.key >= '0' && event.key <= '9' && this.wagerAmount.length < 4) {
+                this.highlightSound.play();  // Add lower-pitched sound for number presses
                 this.wagerAmount += event.key;
                 this.updateWagerText();
             } else if(event.key === 'Backspace' && this.wagerAmount.length > 0) {
+                this.highlightSound.play();  // Add lower-pitched sound for backspace too
                 this.wagerAmount = this.wagerAmount.slice(0, -1);
                 this.updateWagerText();
             } else if(Phaser.Input.Keyboard.JustDown(keySPACE) && this.wagerAmount.length > 0) {
                 const wager = parseInt(this.wagerAmount);
                 if(wager > 0 && wager <= this.points) {
+                    this.selectSound.play();  // Keep regular pitch for final confirmation
                     this.scene.start('playScene', {
                         shipCount: this.selectedShipCount,
                         selectedShip: this.selectedShip,
@@ -220,6 +229,7 @@ class Betting extends Phaser.Scene {
     update() {
         // Handle ESC key with all edge cases
         if (Phaser.Input.Keyboard.JustDown(this.keyESC)) {
+            this.selectSound.play();  // Main selection sound
             if (this.state === 'shipSelect') {
                 // Go back to ship count selection
                 this.state = 'shipCount';
@@ -251,14 +261,17 @@ class Betting extends Phaser.Scene {
 
         if(this.state === 'shipCount') {
             if(Phaser.Input.Keyboard.JustDown(keyLEFT)) {
+                this.highlightSound.play();  // Highlight sound
                 this.currentSelection = Math.max(0, this.currentSelection - 1);
                 this.updateSelection();
             }
             else if(Phaser.Input.Keyboard.JustDown(keyRIGHT)) {
+                this.highlightSound.play();  // Highlight sound
                 this.currentSelection = Math.min(3, this.currentSelection + 1);
                 this.updateSelection();
             }
             else if(Phaser.Input.Keyboard.JustDown(keySPACE)) {
+                this.selectSound.play();  // Main selection sound
                 this.selectedShipCount = this.currentSelection + 2;
                 this.state = 'shipSelect';
                 this.currentSelection = 0;
@@ -267,14 +280,17 @@ class Betting extends Phaser.Scene {
             }
         } else if(this.state === 'shipSelect') {  // Add ship selection controls
             if(Phaser.Input.Keyboard.JustDown(keyLEFT)) {
+                this.highlightSound.play();  // Highlight sound
                 this.currentSelection = Math.max(0, this.currentSelection - 1);
                 this.updateSelection();
             }
             else if(Phaser.Input.Keyboard.JustDown(keyRIGHT)) {
+                this.highlightSound.play();  // Highlight sound
                 this.currentSelection = Math.min(this.selectedShipCount - 1, this.currentSelection + 1);
                 this.updateSelection();
             }
             else if(Phaser.Input.Keyboard.JustDown(keySPACE)) {
+                this.selectSound.play();  // Main selection sound
                 this.selectedShip = this.currentSelection;
                 this.state = 'wager';
                 this.showWagerOptions();
@@ -282,6 +298,7 @@ class Betting extends Phaser.Scene {
         }
 
         if(Phaser.Input.Keyboard.JustDown(this.keyS)) {
+            this.selectSound.play();  // Main selection sound
             this.scene.start('shopScene', {
                 points: this.points,
                 rocketSpeed: this.rocketSpeed,
