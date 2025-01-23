@@ -1,4 +1,3 @@
-// Rocket prefab
 class Rocket extends Phaser.GameObjects.Sprite {
     constructor(scene, x, y, texture, frame) {
       super(scene, x, y, texture, frame)
@@ -6,7 +5,7 @@ class Rocket extends Phaser.GameObjects.Sprite {
       // add object to existing scene
       scene.add.existing(this)
       this.isFiring = false
-      this.isActive = false  // New property to track if this rocket is the active one
+      this.isActive = false
       this.moveSpeed = scene.rocketSpeed || 2
       this.sfxShot = scene.sound.add('sfx-shot')
       this.setAlpha(0.5)  // Start inactive rockets as semi-transparent

@@ -204,10 +204,55 @@ class Play extends Phaser.Scene {
             winnings = -this.wager;
         }
 
+        // Check for game over conditions
+        if (this.points >= 1000) {
+            this.add.text(
+                game.config.width/2,
+                game.config.height/2 - 64,
+                'CONGRATULATIONS!\nYou\'ve reached 1000 points!',
+                victoryConfig
+            ).setOrigin(0.5);
+            
+            victoryConfig.fontSize = '24px';
+            this.add.text(
+                game.config.width/2,
+                game.config.height/2 + 32,
+                'Press SPACE to play again',
+                victoryConfig
+            ).setOrigin(0.5);
+
+            this.input.keyboard.once('keydown-SPACE', () => {
+                this.scene.start('menuScene');
+            });
+            return;
+        } 
+        else if (this.points <= 0) {
+            this.add.text(
+                game.config.width/2,
+                game.config.height/2 - 64,
+                'GAME OVER!\nYou\'ve run out of points!',
+                victoryConfig
+            ).setOrigin(0.5);
+            
+            victoryConfig.fontSize = '24px';
+            this.add.text(
+                game.config.width/2,
+                game.config.height/2 + 32,
+                'Press SPACE to try again',
+                victoryConfig
+            ).setOrigin(0.5);
+
+            this.input.keyboard.once('keydown-SPACE', () => {
+                this.scene.start('menuScene');
+            });
+            return;
+        }
+
+        // Normal round end
         this.add.text(
             game.config.width/2,
             game.config.height/2,
-            `Ship ${winningIndex} Wins!\nYou won ${winnings} points!`,
+            `Ship ${winningIndex} Wins!\nYou ${winnings >= 0 ? 'won' : 'lost'} ${Math.abs(winnings)} points!`,
             victoryConfig
         ).setOrigin(0.5);
 
