@@ -45,7 +45,6 @@ class Menu extends Phaser.Scene {
         }
 
         this.add.text(game.config.width/2, game.config.height/2, 'ROCKET PATROL CASINO', menuConfig).setOrigin(0.5)
-        this.add.text(game.config.width/2, game.config.height/2 + borderUISize, 'Use ←→ arrows to move & (F) to Fire', menuConfig).setOrigin(0.5)
 
         menuConfig.backgroundColor = '#00FF00'
         menuConfig.color = '#000'
@@ -67,7 +66,6 @@ class Menu extends Phaser.Scene {
     
     update() {
         if (Phaser.Input.Keyboard.JustDown(keySPACE)) {
-            // easy mode
             game.settings = {
                 spaceshipSpeed: 3,
                 points: 100

@@ -196,11 +196,13 @@ class Play extends Phaser.Scene {
 
         // Calculate winnings with multiplier
         let winnings = 0;
+        this.points -= this.wager;
+
         if (winningIndex === (this.selectedShip + 1)) { // If selected ship wins
             winnings = this.wager * this.shipCount;
             this.points += winnings;
+            winnings = winnings - this.wager;
         } else {
-            this.points -= this.wager;
             winnings = -this.wager;
         }
 

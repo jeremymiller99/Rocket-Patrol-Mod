@@ -12,73 +12,30 @@ class Betting extends Phaser.Scene {
         this.shipSprites = [];
         this.colors = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF];
         this.wagerAmount = '';
+        this.currentSelection = 0;
+        this.state = 'shipCount';
+        this.currentInstructions = null;
     }
 
     create() {
-        let betConfig = {
-            fontFamily: 'Courier',
-            fontSize: '28px',
-            backgroundColor: '#F3B141',
-            color: '#843605', 
-            align: 'center',
-            padding: { top: 5, bottom: 5 },
-            fixedWidth: 0
+        // Define Y positions directly for easy adjustment
+        const SPACING = {
+            TOP_MARGIN: 120,           // Distance from top of screen
+            INSTRUCTIONS_TO_BUTTONS: 80,  // Space between instructions and buttons
+            BUTTONS_TO_SHIPS: 100,         // Space between buttons and ships
+            SHIPS_TO_WAGER: 80           // Space between ships and wager
         };
 
-        this.add.text(game.config.width/2, game.config.height/2 - 150, `Current Points: ${this.points}`, betConfig).setOrigin(0.5);
-        this.add.text(game.config.width/2, game.config.height/2 - 100, 'Choose Number of Ships', betConfig).setOrigin(0.5);
-        this.add.text(game.config.width/2, game.config.height/2, 'Press 1-5 for number of ships\nMore ships = Higher multiplier!', betConfig).setOrigin(0.5);
+        // Calculate positions based on cumulative spacing
+        this.INSTRUCTION_Y = SPACING.TOP_MARGIN;
+        this.BUTTONS_Y = this.INSTRUCTION_Y + SPACING.INSTRUCTIONS_TO_BUTTONS;
+        this.SHIPS_Y = this.BUTTONS_Y + SPACING.BUTTONS_TO_SHIPS;
+        this.WAGER_Y = this.SHIPS_Y + SPACING.SHIPS_TO_WAGER;
 
-        // Define keys
-        this.keyONE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
-        this.keyTWO = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
-        this.keyTHREE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
-        this.keyFOUR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.FOUR);
-        this.keyFIVE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.FIVE);
-        this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-        this.keyESC = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-
-        this.wagerText = this.add.text(game.config.width/2, game.config.height/2 + 50, '', betConfig).setOrigin(0.5);
-
-        this.add.text(game.config.width/2, game.config.height/2 + borderUISize*3, 
-            'Press S to visit Shop', betConfig).setOrigin(0.5);
-
-        // Add pointer input for ship selection
-        this.input.on('gameobjectdown', (pointer, gameObject) => {
-            if (gameObject.shipIndex !== undefined && !this.selectedShip) {
-                this.selectedShip = gameObject.shipIndex;
-                this.highlightSelectedShip(gameObject);
-                this.promptWager();
-            }
-        });
-    }
-
-    showShipSelection(count) {
-        // Clear any existing ships
-        this.shipSprites.forEach(sprite => sprite.destroy());
-        this.shipSprites = [];
-
-        const spacing = 80;
-        const startX = game.config.width/2 - ((count-1) * spacing/2);
-        const shipY = game.config.height/2;
-
-        // Create clickable ships
-        for(let i = 0; i < count; i++) {
-            let ship = this.add.sprite(
-                startX + (i * spacing),
-                shipY,
-                'spaceship'
-            ).setOrigin(0.5, 0.5);
-            
-            ship.setTint(this.colors[i]);
-            ship.setInteractive();
-            ship.shipIndex = i;
-            this.shipSprites.push(ship);
-        }
-
-        let instructionConfig = {
+        // Header section
+        let headerConfig = {
             fontFamily: 'Courier',
-            fontSize: '24px',
+            fontSize: '32px',
             backgroundColor: '#F3B141',
             color: '#843605',
             align: 'center',
@@ -86,93 +43,311 @@ class Betting extends Phaser.Scene {
             fixedWidth: 0
         };
 
-        this.add.text(game.config.width/2, shipY - 50, 
-            'Click on a ship to place your bet!', instructionConfig).setOrigin(0.5);
-    }
+        // Points display at top-center
+        this.add.text(game.config.width/2, borderUISize, 
+            `$: ${this.points}`, headerConfig).setOrigin(0.5, 0);
 
-    highlightSelectedShip(selectedShip) {
-        this.shipSprites.forEach(ship => {
-            ship.setAlpha(ship === selectedShip ? 1 : 0.5);
-        });
-    }
+        // Instructions section
+        let instructConfig = {
+            fontFamily: 'Courier',
+            fontSize: '24px',
+            backgroundColor: null,
+            color: '#FFFFFF',
+            align: 'left',
+            padding: { top: 5, bottom: 5 },
+        };
 
-    update() {
-        if (this.selectedShipCount === null) {
-            if (Phaser.Input.Keyboard.JustDown(this.keyONE)) {
-                this.selectedShipCount = 1;
-                this.showShipSelection(1);
-            } else if (Phaser.Input.Keyboard.JustDown(this.keyTWO)) {
-                this.selectedShipCount = 2;
-                this.showShipSelection(2);
-            } else if (Phaser.Input.Keyboard.JustDown(this.keyTHREE)) {
-                this.selectedShipCount = 3;
-                this.showShipSelection(3);
-            } else if (Phaser.Input.Keyboard.JustDown(this.keyFOUR)) {
-                this.selectedShipCount = 4;
-                this.showShipSelection(4);
-            } else if (Phaser.Input.Keyboard.JustDown(this.keyFIVE)) {
-                this.selectedShipCount = 5;
-                this.showShipSelection(5);
-            }
-        } else if (Phaser.Input.Keyboard.JustDown(this.keyESC) && !this.selectedShip) {
-            // Reset selection only if ship hasn't been selected yet
-            this.selectedShipCount = null;
-            this.shipSprites.forEach(sprite => sprite.destroy());
-            this.shipSprites = [];
-            // Clear any existing instruction text
-            this.children.list
-                .filter(child => child.type === 'Text')
-                .forEach(text => {
-                    if (text.text.includes('Click on a ship')) {
-                        text.destroy();
-                    }
-                });
+        // Add navigation text configuration
+        let navConfig = {
+            fontFamily: 'Courier',
+            fontSize: '20px',
+            backgroundColor: null,
+            color: '#FFFFFF',
+            align: 'center',
+            padding: { top: 5, bottom: 5 },
+        };
+
+        // Add instruction text
+        this.currentInstructions = this.add.text(
+            game.config.width/2, 
+            this.INSTRUCTION_Y,
+            'Select number of ships', 
+            instructConfig
+        ).setOrigin(0.5);
+
+        // Ship count selection
+        this.shipCountOptions = [];
+        for(let i = 2; i <= 5; i++) {
+            let option = this.add.text(
+                game.config.width/2 + ((i-3.5) * 100),
+                this.BUTTONS_Y,
+                `${i}`, 
+                {
+                    ...instructConfig,  
+                    backgroundColor: '#F3B141', 
+                    align: 'center',
+                    padding: { top: 25, bottom: 25, left: 25, right: 25 },
+                    fixedWidth: 80,
+                    fixedHeight: 80
+                }
+            ).setOrigin(0.5);
+            this.shipCountOptions.push(option);
         }
 
-        if (Phaser.Input.Keyboard.JustDown(this.keyS)) {
-            this.scene.start('shopScene', { 
-                points: this.points,
-                rocketSpeed: this.rocketSpeed,
-                maxShots: this.maxShots 
-            });
-        }
-    }
+        // Initialize ships
+        this.showAllShips();
+        
+        // Initial selection highlight
+        this.state = 'shipCount';
+        this.currentSelection = 0;
+        this.updateSelection();
 
-    promptWager() {
-        this.wagerText.setText('Enter wager amount: ');
+        // Points display at bottom-center
+        this.add.text(game.config.width/2, game.config.height - borderUISize, 
+            `S for Shop`, {...headerConfig, backgroundColor: '#00FF00', color: '#000000'}).setOrigin(0.5, 0);
+            
+
+        // Define keys
+        keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
+        keyRIGHT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
+        keySPACE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+        this.keyESC = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+
+        // Add number key listeners for betting
         this.input.keyboard.on('keydown', this.handleWagerInput, this);
     }
 
     handleWagerInput(event) {
-        if (/^[0-9]$/.test(event.key) && this.wagerAmount.length < 3) {
-            this.wagerAmount += event.key;
-            this.wagerText.setText(`Enter wager amount: ${this.wagerAmount}`);
-        } else if (event.key === 'Backspace' && this.wagerAmount.length > 0) {
-            this.wagerAmount = this.wagerAmount.slice(0, -1);
-            this.wagerText.setText(`Enter wager amount: ${this.wagerAmount}`);
-        } else if (event.key === 'Enter' && this.wagerAmount.length > 0) {
-            const wager = parseInt(this.wagerAmount);
-            if (wager > 0 && wager <= this.points) {
-                // Check if this wager could potentially make them win
-                if (this.points + (wager * this.selectedShipCount) >= 1000) {
-                    this.wagerText.setText(`You need ${1000 - this.points} more points to win!\nTry a smaller bet.`);
-                    this.wagerAmount = '';
-                    return;
+        if(this.state === 'wager') {
+            if(event.key >= '0' && event.key <= '9' && this.wagerAmount.length < 4) {
+                this.wagerAmount += event.key;
+                this.updateWagerText();
+            } else if(event.key === 'Backspace' && this.wagerAmount.length > 0) {
+                this.wagerAmount = this.wagerAmount.slice(0, -1);
+                this.updateWagerText();
+            } else if(Phaser.Input.Keyboard.JustDown(keySPACE) && this.wagerAmount.length > 0) {
+                const wager = parseInt(this.wagerAmount);
+                if(wager > 0 && wager <= this.points) {
+                    this.scene.start('playScene', {
+                        shipCount: this.selectedShipCount,
+                        selectedShip: this.selectedShip,
+                        wager: wager,
+                        points: this.points,
+                        rocketSpeed: this.rocketSpeed,
+                        maxShots: this.maxShots
+                    });
                 }
-                
-                this.input.keyboard.off('keydown', this.handleWagerInput, this);
-                this.scene.start('playScene', { 
-                    shipCount: this.selectedShipCount,
-                    selectedShip: this.selectedShip,
-                    wager: wager, 
-                    points: this.points,
-                    rocketSpeed: this.rocketSpeed,
-                    maxShots: this.maxShots 
-                });
-            } else {
-                this.wagerText.setText('Invalid wager. Try again.');
-                this.wagerAmount = '';
             }
+        }
+    }
+
+    updateWagerText() {
+        if(this.wagerText) {
+            this.wagerText.setText(`$${this.wagerAmount}\nPress SPACE to wager`);
+        }
+    }
+
+    clearCurrentStep() {
+        // Clear current instructions and options
+        if(this.currentInstructions) {
+            this.currentInstructions.destroy();
+        }
+        this.shipCountOptions.forEach(option => option.destroy());
+        this.shipCountOptions = [];
+    }
+
+    updateSelection() {
+        // Update number button highlights
+        this.shipCountOptions.forEach((option, index) => {
+            option.setBackgroundColor(index === this.currentSelection && this.state === 'shipCount' ? '#F3B141' : '#666666');
+        });
+
+        if (this.state === 'shipCount') {
+            this.shipSprites.forEach((ship, index) => {
+                if (index < (this.currentSelection + 2)) {
+                    ship.setAlpha(0.7);
+                    ship.setScale(1);
+                } else {
+                    ship.setAlpha(0.1);
+                    ship.setScale(0.7);
+                }
+                // Clean up any existing outlines
+                if (ship.outline) {
+                    ship.outline.destroy();
+                    ship.outline = null;
+                }
+            });
+        } else if (this.state === 'shipSelect') {
+            this.shipSprites.forEach((ship, index) => {
+                if (index < this.selectedShipCount) {
+                    ship.setAlpha(1);
+                    if (index === this.currentSelection) {
+                        // Create outline effect behind the ship
+                        if (!ship.outline) {
+                            ship.outline = this.add.rectangle(
+                                ship.x, 
+                                ship.y, 
+                                ship.width + 10, 
+                                ship.height + 10, 
+                                0xFFFFFF
+                            ).setOrigin(0.5);
+                            // Move outline to back
+                            ship.outline.setDepth(ship.depth - 1);
+                        }
+                        ship.outline.setVisible(true);
+                        ship.setScale(1.2);
+                    } else {
+                        if (ship.outline) {
+                            ship.outline.destroy();
+                            ship.outline = null;
+                        }
+                        ship.setScale(1);
+                    }
+                    ship.setTint(this.colors[index]);
+                } else {
+                    if (ship.outline) {
+                        ship.outline.destroy();
+                        ship.outline = null;
+                    }
+                    ship.setAlpha(0.1);
+                    ship.setScale(0.7);
+                }
+            });
+        }
+    }
+
+    update() {
+        // Handle ESC key with all edge cases
+        if (Phaser.Input.Keyboard.JustDown(this.keyESC)) {
+            if (this.state === 'shipSelect') {
+                // Go back to ship count selection
+                this.state = 'shipCount';
+                this.currentSelection = this.selectedShipCount - 2;
+                this.selectedShipCount = null;
+                // Clean up selection outlines
+                this.shipSprites.forEach(ship => {
+                    if (ship.outline) {
+                        ship.outline.destroy();
+                        ship.outline = null;
+                    }
+                });
+                this.currentInstructions.setText('Select number of ships');
+                this.updateSelection();
+            } else if (this.state === 'wager') {
+                // Go back to ship selection
+                this.state = 'shipSelect';
+                this.currentSelection = this.selectedShip;
+                this.selectedShip = null;
+                this.wagerAmount = '';
+                if (this.wagerText) {
+                    this.wagerText.destroy();
+                    this.wagerText = null;
+                }
+                this.currentInstructions.setText('Select your ship');
+                this.updateSelection();
+            }
+        }
+
+        if(this.state === 'shipCount') {
+            if(Phaser.Input.Keyboard.JustDown(keyLEFT)) {
+                this.currentSelection = Math.max(0, this.currentSelection - 1);
+                this.updateSelection();
+            }
+            else if(Phaser.Input.Keyboard.JustDown(keyRIGHT)) {
+                this.currentSelection = Math.min(3, this.currentSelection + 1);
+                this.updateSelection();
+            }
+            else if(Phaser.Input.Keyboard.JustDown(keySPACE)) {
+                this.selectedShipCount = this.currentSelection + 2;
+                this.state = 'shipSelect';
+                this.currentSelection = 0;
+                this.currentInstructions.setText('Select your ship');
+                this.updateSelection();
+            }
+        } else if(this.state === 'shipSelect') {  // Add ship selection controls
+            if(Phaser.Input.Keyboard.JustDown(keyLEFT)) {
+                this.currentSelection = Math.max(0, this.currentSelection - 1);
+                this.updateSelection();
+            }
+            else if(Phaser.Input.Keyboard.JustDown(keyRIGHT)) {
+                this.currentSelection = Math.min(this.selectedShipCount - 1, this.currentSelection + 1);
+                this.updateSelection();
+            }
+            else if(Phaser.Input.Keyboard.JustDown(keySPACE)) {
+                this.selectedShip = this.currentSelection;
+                this.state = 'wager';
+                this.showWagerOptions();
+            }
+        }
+
+        if(Phaser.Input.Keyboard.JustDown(this.keyS)) {
+            this.scene.start('shopScene', {
+                points: this.points,
+                rocketSpeed: this.rocketSpeed,
+                maxShots: this.maxShots
+            });
+        }
+    }
+
+    showWagerOptions() {
+        this.currentInstructions.setText('Type your wager amount:');
+        
+        this.wagerText = this.add.text(
+            game.config.width/2,
+            this.WAGER_Y, // Position under ships
+            '$\nPress SPACE to play',
+            {
+                fontFamily: 'Courier',
+                fontSize: '28px',
+                backgroundColor: '#F3B141',
+                color: '#843605',
+                padding: { top: 5, bottom: 5 },
+                align: 'center'
+            }
+        ).setOrigin(0.5);
+    }
+
+    showShips(count) {
+        // Clear any existing ships
+        if (this.shipSprites) {
+            this.shipSprites.forEach(sprite => sprite.destroy());
+        }
+        this.shipSprites = [];
+
+        const spacing = 100;
+        const startX = game.config.width/2 - ((count-1) * spacing/2);
+        const shipY = this.SHIPS_Y; // Under the number buttons
+
+        for(let i = 0; i < count; i++) {
+            let ship = this.add.sprite(startX + (i * spacing), shipY, 'spaceship')
+                .setOrigin(0.5, 0.5);
+            ship.setTint(this.colors[i]);
+            ship.setInteractive();
+            ship.shipIndex = i;
+            this.shipSprites.push(ship);
+        }
+    }
+
+    showAllShips() {
+        // Clear any existing ships
+        if (this.shipSprites) {
+            this.shipSprites.forEach(sprite => sprite.destroy());
+        }
+        this.shipSprites = [];
+
+        const spacing = 100;
+        const startX = game.config.width/2 - (4 * spacing/2);
+        const shipY = this.SHIPS_Y;
+
+        for(let i = 0; i < 5; i++) {
+            let ship = this.add.sprite(startX + (i * spacing), shipY, 'spaceship')
+                .setOrigin(0.5, 0.5);
+            ship.setTint(this.colors[i]);
+            ship.setAlpha(0.2); // Start very faded
+            ship.setScale(0.8); // Start slightly smaller
+            ship.shipIndex = i;
+            this.shipSprites.push(ship);
         }
     }
 } 
