@@ -1,14 +1,14 @@
 let config = {
+    type: Phaser.AUTO,
     width: 640,
     height: 480,
-    type: Phaser.AUTO,
-    scene: [ Menu, Play ]
-}
+    scene: [Boot, Menu, Shop, Betting, Play]
+};
 
 let game = new Phaser.Game(config);
 
-// reserve keyboard bindings
-let keyFIRE, keyRESET, keyLEFT, keyRIGHT, keySAVE
+// reserve ALL keyboard bindings
+let keyF, keyR, keyLEFT, keyRIGHT, keySPACE;
 
 // set UI sizes
 let borderUISize = game.config.height / 15

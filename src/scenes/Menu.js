@@ -8,6 +8,9 @@ class Menu extends Phaser.Scene {
         this.load.image('rocket', './assets/rocket.png')
         this.load.image('spaceship', './assets/spaceship.png')
         this.load.image('starfield', './assets/starfield.png')
+        //this.load.image('spaceship1', './assets/spaceship1.png');
+        //this.load.image('spaceship2', './assets/spaceship2.png');
+        //this.load.image('spaceship3', './assets/spaceship3.png');
         // load spritesheet
         this.load.spritesheet('explosion', './assets/explosion.png', {
             frameWidth: 64,
@@ -41,54 +44,36 @@ class Menu extends Phaser.Scene {
             fixedWidth: 0
         }
 
-        this.add.text(game.config.width/2, game.config.height/2, 'ROCKET PATROL', menuConfig).setOrigin(0.5)
+        this.add.text(game.config.width/2, game.config.height/2, 'ROCKET PATROL CASINO', menuConfig).setOrigin(0.5)
         this.add.text(game.config.width/2, game.config.height/2 + borderUISize, 'Use ←→ arrows to move & (F) to Fire', menuConfig).setOrigin(0.5)
 
         menuConfig.backgroundColor = '#00FF00'
         menuConfig.color = '#000'
-        this.add.text(game.config.width/2, game.config.height/2 + borderUISize*2, 'Press ← for Easy or → for Hard', menuConfig).setOrigin(0.5)
+        this.add.text(game.config.width/2, game.config.height/2 + borderUISize*2, 'Press (SPACE) to Play', menuConfig).setOrigin(0.5)
 
         // define keys
-        keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT)
-        keyRIGHT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT)
+        keySPACE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-        // Initialize and display leaderboard
-        this.updateLeaderboard()
+        // Add handler for SPACE key
+        this.input.keyboard.once('keydown-SPACE', () => {
+            this.scene.start('bettingScene', {
+                points: 100,  // Starting points
+                rocketSpeed: 2,  // Starting rocket speed
+                maxShots: 1   // Starting max shots
+            });
+        });
     }
-    
-    updateLeaderboard() {
-        const scores = JSON.parse(localStorage.getItem('highScores')) || []
-        
-        // Update the display
-        const scoresDiv = document.getElementById('scores')
-        scoresDiv.innerHTML = scores
-            .map((entry, index) => `
-                <div class="score-entry">
-                    ${index + 1}. ${entry.name} - ${entry.score}
-                    <br><small>${entry.difficulty} mode</small>
-                </div>
-            `)
-            .join('')
-    }
+
     
     update() {
-        if (Phaser.Input.Keyboard.JustDown(keyLEFT)) {
+        if (Phaser.Input.Keyboard.JustDown(keySPACE)) {
             // easy mode
             game.settings = {
                 spaceshipSpeed: 3,
-                gameTimer: 60000    
+                points: 100
             }
             this.sound.play('sfx-select')
-            this.scene.start('playScene')    
-        }
-        if (Phaser.Input.Keyboard.JustDown(keyRIGHT)) {
-            // hard mode
-            game.settings = {
-                spaceshipSpeed: 4,
-                gameTimer: 45000    
-            }
-            this.sound.play('sfx-select')
-            this.scene.start('playScene')    
+            this.scene.start('bettingScene', { points: game.settings.points })    
         }
     }
 }
