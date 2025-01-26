@@ -20,9 +20,19 @@ class Shop extends Phaser.Scene {
         for(let i = 1; i < this.maxShots; i++) {
             this.shotCost *= 2;
         }
+
+        // Add selection tracking
+        this.currentSelection = 0;  // 0: Speed, 1: Shots, 2: Back
+        this.maxSelection = this.maxShots < 4 ? 2 : 1;  // Adjust based on if shots upgrade is available
     }
 
     create() {
+        // Add sound effects
+        this.selectSound = this.sound.add('sfx-select');
+        this.highlightSound = this.sound.add('sfx-select', { 
+            detune: -300
+        });
+
         // Configuration for menu text
         let menuConfig = {
             fontFamily: 'Courier',
@@ -39,57 +49,107 @@ class Shop extends Phaser.Scene {
 
         // Speed upgrade option
         menuConfig.backgroundColor = '#00FF00';
-        this.add.text(game.config.width/2, game.config.height/2 - borderUISize*2, 
-            `1. Speed Upgrade (${this.speedCost}pts)\nCurrent: ${this.rocketSpeed}`, menuConfig).setOrigin(0.5);
+        this.speedText = this.add.text(game.config.width/2, game.config.height/2 - borderUISize*2, 
+            `Speed Upgrade (${this.speedCost}pts)\nCurrent: ${this.rocketSpeed}`, menuConfig).setOrigin(0.5);
 
         // Shot count upgrade option (only show if not maxed)
         if (this.maxShots < 4) {
-            this.add.text(game.config.width/2, game.config.height/2, 
-                `2. Shot Count Upgrade (${this.shotCost}pts)\nCurrent: ${this.maxShots}`, menuConfig).setOrigin(0.5);
+            this.shotText = this.add.text(game.config.width/2, game.config.height/2, 
+                `Shot Count Upgrade (${this.shotCost}pts)\nCurrent: ${this.maxShots}`, menuConfig).setOrigin(0.5);
         } else {
-            this.add.text(game.config.width/2, game.config.height/2, 
-                'Maximum Rocket Count Reached!', menuConfig).setOrigin(0.5);
+            this.shotText = this.add.text(game.config.width/2, game.config.height/2, 
+                'Maximum Rocket Count Reached! (4)', menuConfig).setOrigin(0.5);
         }
 
         // Back to betting option
         menuConfig.backgroundColor = '#F3B141';
-        this.add.text(game.config.width/2, game.config.height/2 + borderUISize*2, 
-            'Press SPACE to return to betting', menuConfig).setOrigin(0.5);
+        this.backText = this.add.text(game.config.width/2, game.config.height/2 + borderUISize*2, 
+            'Return to betting', menuConfig).setOrigin(0.5);
 
         // Define keys
-        this.keyONE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
-        this.keyTWO = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
+        keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
+        keyRIGHT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
         keySPACE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+        // Add up/down keys
+        keyUP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
+        keyDOWN = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+
+        // Update initial selection
+        this.updateSelection();
     }
 
     update() {
-        if(Phaser.Input.Keyboard.JustDown(this.keyONE) && this.points >= this.speedCost && (this.points - this.speedCost) > 0) {
-            this.points -= this.speedCost;
-            this.rocketSpeed += 0.5;
-            this.scene.restart({ 
-                points: this.points, 
-                rocketSpeed: this.rocketSpeed, 
-                maxShots: this.maxShots 
-            });
+        // Handle navigation
+        if(Phaser.Input.Keyboard.JustDown(keyLEFT) || 
+           Phaser.Input.Keyboard.JustDown(keyDOWN) ||
+           Phaser.Input.Keyboard.JustDown(keyRIGHT) ||
+           Phaser.Input.Keyboard.JustDown(keyUP)) {
+            this.highlightSound.play();
+            if(Phaser.Input.Keyboard.JustDown(keyLEFT) || Phaser.Input.Keyboard.JustDown(keyDOWN)) {
+                this.currentSelection = (this.currentSelection - 1 + this.maxSelection + 1) % (this.maxSelection + 1);
+            } else {
+                this.currentSelection = (this.currentSelection + 1) % (this.maxSelection + 1);
+            }
+            this.updateSelection();
         }
-        else if(Phaser.Input.Keyboard.JustDown(this.keyTWO) && 
-                this.maxShots < 4 && 
-                this.points >= this.shotCost && 
-                (this.points - this.shotCost) > 0) {
-            this.points -= this.shotCost;
-            this.maxShots += 1;
-            this.scene.restart({ 
-                points: this.points, 
-                rocketSpeed: this.rocketSpeed, 
-                maxShots: this.maxShots 
-            });
+
+        // Handle selection
+        if(Phaser.Input.Keyboard.JustDown(keySPACE)) {
+            switch(this.currentSelection) {
+                case 0: // Speed upgrade
+                    if(this.points >= this.speedCost && (this.points - this.speedCost) > 0) {
+                        this.selectSound.play();
+                        this.points -= this.speedCost;
+                        this.rocketSpeed += 0.5;
+                        this.scene.restart({ 
+                            points: this.points, 
+                            rocketSpeed: this.rocketSpeed, 
+                            maxShots: this.maxShots 
+                        });
+                    }
+                    break;
+                case 1: // Shot upgrade
+                    if(this.maxShots < 4 && this.points >= this.shotCost && (this.points - this.shotCost) > 0) {
+                        this.selectSound.play();
+                        this.points -= this.shotCost;
+                        this.maxShots += 1;
+                        this.scene.restart({ 
+                            points: this.points, 
+                            rocketSpeed: this.rocketSpeed, 
+                            maxShots: this.maxShots 
+                        });
+                    }
+                    break;
+                case 2: // Back to betting
+                    this.selectSound.play();
+                    this.scene.start('bettingScene', { 
+                        points: this.points,
+                        rocketSpeed: this.rocketSpeed,
+                        maxShots: this.maxShots 
+                    });
+                    break;
+            }
         }
-        else if(Phaser.Input.Keyboard.JustDown(keySPACE)) {
-            this.scene.start('bettingScene', { 
-                points: this.points,
-                rocketSpeed: this.rocketSpeed,
-                maxShots: this.maxShots 
-            });
+    }
+
+    updateSelection() {
+        // Reset all text backgrounds
+        this.speedText.setBackgroundColor('#00FF00');
+        this.shotText.setBackgroundColor('#00FF00');
+        this.backText.setBackgroundColor('#F3B141');
+
+        // Highlight selected option
+        switch(this.currentSelection) {
+            case 0:
+                this.speedText.setBackgroundColor('#FFFF00');
+                break;
+            case 1:
+                this.shotText.setBackgroundColor('#FFFF00');
+                break;
+            case 2:
+                this.backText.setBackgroundColor('#FFFF00');
+                break;
         }
     }
 } 
