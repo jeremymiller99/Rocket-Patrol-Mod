@@ -11,8 +11,8 @@
 // Also added a live scoreboard during the race that shows the current standings of all the ships as well the one you bet on to help you keep track of whats going on.
 // Added multiple new scenes, like Boot.js for loading assets, Shop.js for the shop, and Betting.js for the betting screen.
 
-// I had a lot of fun making this game, and I think it is worth the full 20 points. Along with Nathan's code, I utilized Cursor, an IDE that has AI integrated to help me with some of the coding. 
-// I found it most useful in diagnosing problems in the code. Curosr allows you to ask questions about the entire codebase without having to copy past code, 
+// I had a lot of fun making this game, and with all of the new features I think it is worth the full 20 points. Along with Nathan's code, I utilized Cursor, an IDE that has AI integrated to help me with some of the coding. 
+// I found it most useful in diagnosing problems in the code. Cursor allows you to ask questions about the entire codebase without having to copy past code, 
 // so you can ask general questions and it will scan all files. 
 // The solutions generated were not always correct, but for many issues I encountered, I was able to use this tool to understand what was wrong and fix it myself.
 let config = {
