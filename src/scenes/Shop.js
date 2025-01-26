@@ -45,17 +45,17 @@ class Shop extends Phaser.Scene {
         };
 
         // Display current points
-        this.add.text(game.config.width/2, borderUISize*2, `Points: ${this.points}`, menuConfig).setOrigin(0.5);
+        this.add.text(game.config.width/2, borderUISize*2, `$: ${this.points}`, menuConfig).setOrigin(0.5);
 
         // Speed upgrade option
         menuConfig.backgroundColor = '#00FF00';
         this.speedText = this.add.text(game.config.width/2, game.config.height/2 - borderUISize*2, 
-            `Speed Upgrade (${this.speedCost}pts)\nCurrent: ${this.rocketSpeed}`, menuConfig).setOrigin(0.5);
+            `Speed Upgrade ($${this.speedCost})\nCurrent: ${this.rocketSpeed}`, menuConfig).setOrigin(0.5);
 
         // Shot count upgrade option (only show if not maxed)
         if (this.maxShots < 4) {
             this.shotText = this.add.text(game.config.width/2, game.config.height/2, 
-                `Shot Count Upgrade (${this.shotCost}pts)\nCurrent: ${this.maxShots}`, menuConfig).setOrigin(0.5);
+                `Shot Count Upgrade ($${this.shotCost})\nCurrent: ${this.maxShots}`, menuConfig).setOrigin(0.5);
         } else {
             this.shotText = this.add.text(game.config.width/2, game.config.height/2, 
                 'Maximum Rocket Count Reached! (4)', menuConfig).setOrigin(0.5);
@@ -64,7 +64,7 @@ class Shop extends Phaser.Scene {
         // Back to betting option
         menuConfig.backgroundColor = '#F3B141';
         this.backText = this.add.text(game.config.width/2, game.config.height/2 + borderUISize*2, 
-            'Return to betting', menuConfig).setOrigin(0.5);
+            'Return to Betting', menuConfig).setOrigin(0.5);
 
         // Define keys
         keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
