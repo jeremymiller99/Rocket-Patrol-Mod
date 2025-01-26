@@ -116,6 +116,8 @@ class Betting extends Phaser.Scene {
         // Define keys
         keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
         keyRIGHT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
+        keyUP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
+        keyDOWN = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
         keySPACE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
         this.keyESC = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
@@ -256,16 +258,20 @@ class Betting extends Phaser.Scene {
                 }
                 this.currentInstructions.setText('Select your ship');
                 this.updateSelection();
+            } else if (this.state === 'shipCount') {
+                // Go back to main menu
+                this.selectSound.play();
+                this.scene.start('menuScene');
             }
         }
 
         if(this.state === 'shipCount') {
-            if(Phaser.Input.Keyboard.JustDown(keyLEFT)) {
+            if(Phaser.Input.Keyboard.JustDown(keyLEFT) || Phaser.Input.Keyboard.JustDown(keyDOWN)) {
                 this.highlightSound.play();  // Highlight sound
                 this.currentSelection = Math.max(0, this.currentSelection - 1);
                 this.updateSelection();
             }
-            else if(Phaser.Input.Keyboard.JustDown(keyRIGHT)) {
+            else if(Phaser.Input.Keyboard.JustDown(keyRIGHT) || Phaser.Input.Keyboard.JustDown(keyUP)) {
                 this.highlightSound.play();  // Highlight sound
                 this.currentSelection = Math.min(3, this.currentSelection + 1);
                 this.updateSelection();
@@ -278,13 +284,13 @@ class Betting extends Phaser.Scene {
                 this.currentInstructions.setText('Select your ship');
                 this.updateSelection();
             }
-        } else if(this.state === 'shipSelect') {  // Add ship selection controls
-            if(Phaser.Input.Keyboard.JustDown(keyLEFT)) {
+        } else if(this.state === 'shipSelect') {
+            if(Phaser.Input.Keyboard.JustDown(keyLEFT) || Phaser.Input.Keyboard.JustDown(keyDOWN)) {
                 this.highlightSound.play();  // Highlight sound
                 this.currentSelection = Math.max(0, this.currentSelection - 1);
                 this.updateSelection();
             }
-            else if(Phaser.Input.Keyboard.JustDown(keyRIGHT)) {
+            else if(Phaser.Input.Keyboard.JustDown(keyRIGHT) || Phaser.Input.Keyboard.JustDown(keyUP)) {
                 this.highlightSound.play();  // Highlight sound
                 this.currentSelection = Math.min(this.selectedShipCount - 1, this.currentSelection + 1);
                 this.updateSelection();

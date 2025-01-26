@@ -3,13 +3,16 @@ let config = {
     width: 640,
     height: 480,
     parent: 'gameContainer',
-    scene: [Boot, Menu, Shop, Betting, Play]
+    scene: [Boot, Menu, Shop, Betting, Play],
+    audio: {
+        disableWebAudio: false
+    }
 };
 
 let game = new Phaser.Game(config);
 
-// reserve ALL keyboard bindings
-let keyF, keyR, keyLEFT, keyRIGHT, keySPACE;
+// reserve keyboard bindings
+let keyLEFT, keyRIGHT, keyUP, keyDOWN, keySPACE;
 
 // set UI sizes
 let borderUISize = game.config.height / 15

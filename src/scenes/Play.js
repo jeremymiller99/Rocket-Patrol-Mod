@@ -15,103 +15,239 @@ class Play extends Phaser.Scene {
         this.currentRocketIndex = 0;
         this.selectedShip = data.selectedShip;
         this.lapCounters = []; // Array to hold lap counter text objects
+
+        // UI Configuration object
+        this.UI_CONFIG = {
+            colors: {
+                border: 0xFFFFFF,
+                uiBackground: 0x00FF00,
+                betDisplay: 0xF3B141,
+                leaderboardBg: 0x000000,
+                shipColors: [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF]
+            },
+            fonts: {
+                header: {
+                    fontFamily: 'Courier',
+                    fontSize: '28px',
+                    color: '#843605',
+                    align: 'center',
+                    padding: { top: 5, bottom: 5 }
+                },
+                leaderboard: {
+                    fontFamily: 'Courier',
+                    fontSize: '14px',
+                    color: '#FFFFFF',
+                    align: 'center'
+                },
+                position: {
+                    fontFamily: 'Courier',
+                    fontSize: '14px',
+                    color: '#FFFFFF'
+                },
+                bet: {
+                    fontFamily: 'Courier',
+                    fontSize: '28px',
+                    color: '#843605',
+                    align: 'center'
+                }
+            },
+            leaderboard: {
+                width: game.config.width * 0.2,
+                height: game.config.width * 0.2,
+                x: borderUISize * 2,
+                y: game.config.height - (borderUISize * 6) - (this.ships.length * (borderUISize * 2.5)),  // Reduced from 8 to 7
+                opacity: 0.5,
+                spacing: borderUISize * 0.4,
+                shipScale: 0.3,
+                shipNames: ['Red', 'Green', 'Blue', 'Yellow', 'Pink']
+            },
+            betDisplay: {
+                width: game.config.width * 0.6,
+                height: borderUISize * 1.5,
+                y: borderUISize + borderPadding + (borderUISize * 0.25)
+            },
+            lapCounter: {
+                y: -20,
+                fontSize: '20px',
+                color: '#FFFFFF'
+            }
+        };
     }
 
     create() {
-        // place tile sprite
-        this.starfield = this.add.tileSprite(0, 0, 640, 480, 'starfield').setOrigin(0, 0);
-        
-        // green UI background
-        this.add.rectangle(0, borderUISize + borderPadding, game.config.width, borderUISize * 2, 0x00FF00).setOrigin(0, 0);
-        
-        // white borders
-        this.add.rectangle(0, 0, game.config.width, borderUISize, 0xFFFFFF).setOrigin(0, 0);
-        this.add.rectangle(0, game.config.height - borderUISize, game.config.width, borderUISize, 0xFFFFFF).setOrigin(0, 0);
-        this.add.rectangle(0, 0, borderUISize, game.config.height, 0xFFFFFF).setOrigin(0, 0);
-        this.add.rectangle(game.config.width - borderUISize, 0, borderUISize, game.config.height, 0xFFFFFF).setOrigin(0, 0);
+        // Initialize sounds
+        this.lapCompleteSound = this.sound.add('sfx-lap-complete', { volume: 0.5 });
+        this.raceCompleteSound = this.sound.add('sfx-race-complete', { volume: 0.7 });
 
-        // add rockets based on maxShots
-        const rocketSpacing = 50;
-        const startX = game.config.width/2 - ((this.maxShots-1) * rocketSpacing/2);
-        
-        for(let i = 0; i < this.maxShots; i++) {
-            let rocket = new Rocket(
-                this, 
-                startX + (i * rocketSpacing), 
-                game.config.height - borderUISize - borderPadding, 
-                'rocket'
-            ).setOrigin(0.5, 0);
-            this.rockets.push(rocket);
-        }
+        // Add starfield
+        this.starfield = this.add.tileSprite(0, 0, game.config.width, game.config.height, 'starfield').setOrigin(0, 0);
 
-        // Initialize the first rocket as active
-        this.rockets[this.currentRocketIndex].setActive(true);
+        // Create UI elements using config
+        this.createBorders();
+        this.createBetDisplay();
+        this.createLeaderboard();
 
-        // Create array of possible y positions for ships
+        // Define ship lanes with proper spacing
         let shipLanes = [
             borderUISize*4,
             borderUISize*5 + borderPadding*2,
             borderUISize*6 + borderPadding*4,
             borderUISize*7 + borderPadding*6,
-            borderUISize*8 + borderPadding*8
+            borderUISize*8 + borderPadding*8,  // Added fifth lane
         ];
 
-        // Shuffle the lanes array
-        shipLanes = Phaser.Utils.Array.Shuffle(shipLanes);
-
-        // Create ships based on selected count
-        const baseSpeed = game.settings?.spaceshipSpeed || 3;
-        const colors = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF]; // Different colors for each ship
-
+        // Add ships
         for(let i = 0; i < this.shipCount; i++) {
-            let ship = new Spaceship(
+            // Generate random speed between 2 and 4
+            let randomSpeed = Math.random() * 2 + 2;
+            this.ships.push(new Spaceship(
                 this,
-                game.config.width + (borderUISize * (3 * i)),
+                game.config.width + borderUISize*6,
                 shipLanes[i],
                 'spaceship',
                 0,
                 30,
-                baseSpeed + Phaser.Math.Between(-1, 1)  // Random speed variation
-            ).setOrigin(0, 0);
-            
-            ship.setTint(colors[i]);  // Set unique color
-            ship.laps = 0;  // Initialize lap counter
-            this.ships.push(ship);
+                randomSpeed  // Use random speed instead of i + 1
+            ).setOrigin(0, 0));
+            // Add color tint to ships - match betting screen colors
+            switch(i) {
+                case 0: // Red
+                    this.ships[i].setTint(0xFF0000);
+                    break;
+                case 1: // Green
+                    this.ships[i].setTint(0x00FF00);
+                    break;
+                case 2: // Blue
+                    this.ships[i].setTint(0x0000FF);
+                    break;
+                case 3: // Yellow
+                    this.ships[i].setTint(0xFFFF00);
+                    break;
+                case 4: // Pink
+                    this.ships[i].setTint(0xFF00FF);
+                    break;
+            }
         }
 
-        // Add lap counters above each ship
-        let lapConfig = {
-            fontFamily: 'Courier',
-            fontSize: '20px',
-            color: '#FFFFFF',
-            align: 'center',
-            padding: { top: 5, bottom: 5 },
-        };
+        // Add rockets
+        for(let i = 0; i < this.maxShots; i++) {
+            this.rockets.push(new Rocket(
+                this,
+                game.config.width/2,  // Center X position
+                game.config.height - borderUISize - borderPadding,  // Bottom Y position
+                'rocket',
+                0,  // Fixed: Set frame to 0 instead of rocketSpeed
+                this.rocketSpeed
+            ).setOrigin(0.5, 0));
+            this.rockets[i].setActive(false);
+        }
 
-        this.ships.forEach((ship, index) => {
-            let lapText = this.add.text(ship.x, ship.y - 20, '0', lapConfig).setOrigin(0.5);
-            this.lapCounters.push(lapText);
-        });
+        // Activate first rocket
+        this.rockets[0].setActive(true);
 
-        // Define keys
-        keyF = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
-        keyR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+        // Define only the keys we actually use
         keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
         keyRIGHT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
+        keySPACE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    }
 
-        // Display multiplier
-        let scoreConfig = {
-            fontFamily: 'Courier',
-            fontSize: '28px',
-            backgroundColor: '#F3B141',
-            color: '#843605',
-            align: 'right',
-            padding: { top: 5, bottom: 5 },
-            fixedWidth: 100
-        };
+    createBorders() {
+        // White borders using UI_CONFIG
+        this.add.rectangle(0, 0, game.config.width, borderUISize, 
+            this.UI_CONFIG.colors.border).setOrigin(0, 0);
+        this.add.rectangle(0, game.config.height - borderUISize, game.config.width, 
+            borderUISize, this.UI_CONFIG.colors.border).setOrigin(0, 0);
+        this.add.rectangle(0, 0, borderUISize, game.config.height, 
+            this.UI_CONFIG.colors.border).setOrigin(0, 0);
+        this.add.rectangle(game.config.width - borderUISize, 0, borderUISize, 
+            game.config.height, this.UI_CONFIG.colors.border).setOrigin(0, 0);
+    }
+
+    createBetDisplay() {
+        const config = this.UI_CONFIG.betDisplay;
+        const x = (game.config.width - config.width) / 2;
         
-        this.add.text(borderUISize + borderPadding, borderUISize + borderPadding*2, 
-            `${this.shipCount}x`, scoreConfig);
+        // Background
+        this.add.rectangle(x, config.y, config.width, config.height, 
+            this.UI_CONFIG.colors.betDisplay).setOrigin(0, 0);
+
+        // Calculate potential winnings
+        let winnings = this.wager * this.shipCount;
+
+        // Bet text
+        this.add.text(
+            x + (config.width/2), 
+            config.y + (config.height/2),
+            `$${this.wager} to win $${winnings} (${this.shipCount}x)`,
+            this.UI_CONFIG.fonts.bet
+        ).setOrigin(0.5);
+    }
+
+    createLeaderboard() {
+        const config = this.UI_CONFIG.leaderboard;
+        
+        // Background
+        this.add.rectangle(
+            config.x, 
+            config.y, 
+            config.width, 
+            config.height, 
+            this.UI_CONFIG.colors.leaderboardBg, 
+            config.opacity
+        ).setOrigin(0);
+
+        // Title
+        this.add.text(
+            config.x + config.width/2 - 15, 
+            config.y + borderUISize/2 + 50,
+            "STANDINGS",   
+            this.UI_CONFIG.fonts.leaderboard
+        ).setOrigin(0.5);
+
+        // Create position displays
+        this.positionDisplays = [];
+        
+        for(let i = 0; i < this.shipCount; i++) {
+            let yPos = config.y + borderUISize * 2 + (i * config.spacing);
+            let centerX = config.x + (config.width / 2);
+            
+            // Background highlight for selected ship
+            let highlight = this.add.rectangle(
+                config.x,
+                yPos,
+                config.width,
+                config.spacing,
+                0x00FF00,
+                i === this.selectedShip ? 0.6 : 0
+            ).setOrigin(0, 0.5);
+            
+            // Lap counter text
+            let lapText = this.add.text(
+                centerX - 20,  // Adjusted position
+                yPos,
+                "0 LAPS",
+                {
+                    ...this.UI_CONFIG.fonts.position,
+                    fontSize: '18px'
+                }
+            ).setOrigin(1, 0.5);  // Right align
+
+            // Ship icon - positioned relative to lap text
+            let shipIcon = this.add.sprite(
+                centerX + 20,  // Adjusted position
+                yPos,
+                'spaceship'
+            ).setScale(config.shipScale)
+             .setTint(this.UI_CONFIG.colors.shipColors[i])
+             .setOrigin(0, 0.5);  // Left align
+
+            this.positionDisplays.push({
+                highlight: highlight,
+                lapDisplay: lapText,
+                ship: shipIcon,
+                rank: i
+            });
+        }
     }
 
     update() {
@@ -119,51 +255,76 @@ class Play extends Phaser.Scene {
             this.starfield.tilePositionX -= 4;
             
             // Update rockets
-            this.rockets.forEach(rocket => rocket.update());
+            this.rockets.forEach(rocket => {
+                rocket.update();
+                
+                // Check collisions with each ship
+                this.ships.forEach((ship, index) => {
+                    if (this.checkCollision(rocket, ship) && !ship.isExploding) {
+                        rocket.reset();
+                        ship.isExploding = true;
+                        ship.setVisible(false);
+                        
+                        // Main ship explosion
+                        let boom = this.add.sprite(ship.x, ship.y, 'explosion').setOrigin(0, 0);
+                        boom.anims.play('explode');
+                        boom.on('animationcomplete', () => {
+                            ship.reset();
+                            ship.setVisible(true);
+                            boom.destroy();
+                        });
+
+                        // Leaderboard icon explosion
+                        let display = this.positionDisplays[index];
+                        display.ship.setVisible(false);
+                        let iconBoom = this.add.sprite(
+                            display.ship.x, 
+                            display.ship.y, 
+                            'explosion'
+                        ).setOrigin(0.5, 0.5)
+                         .setScale(0.5);  // Smaller explosion for the icon
+                        
+                        iconBoom.anims.play('explode');
+                        iconBoom.on('animationcomplete', () => {
+                            display.ship.setVisible(true);
+                            iconBoom.destroy();
+                        });
+
+                        this.sound.play('sfx-explosion');
+                    }
+                });
+            });
             
-            // Update ships and their lap counters
+            // Update ships
             this.ships.forEach((ship, index) => {
                 ship.update();
-                
-                // Update lap counter position and text
-                if (!this.lapCounters) this.lapCounters = [];
-                if (!this.lapCounters[index]) {
-                    this.lapCounters[index] = this.add.text(ship.x, ship.y - 20, '0', {
-                        fontFamily: 'Courier',
-                        fontSize: '20px',
-                        color: '#FFFFFF',
-                        align: 'center'
-                    }).setOrigin(0.5);
-                }
-                
-                // Update counter position and text
-                this.lapCounters[index].x = ship.x + ship.width/2;
-                this.lapCounters[index].y = ship.y - 20;
-                this.lapCounters[index].setText(`${ship.laps}`);
                 
                 // Check if ship has crossed the left boundary
                 if(ship.x <= 0 - ship.width) {
                     ship.reset();
                     ship.addLap();
-                    // Check if any ship has completed 3 laps
+                    
+                    if (this.lapCompleteSound) {
+                        this.lapCompleteSound.play();
+                    }
+
                     if(ship.laps >= 3) {
                         this.endRound();
                     }
                 }
             });
 
-            // Check collisions
-            this.rockets.forEach(rocket => {
-                if(rocket.isFiring) {
-                    this.ships.forEach(ship => {
-                        if(!ship.isExploding && this.checkCollision(rocket, ship)) {
-                            rocket.reset();
-                            this.shipExplode(ship);
-                        }
-                    });
-                }
-            });
+            // Update leaderboard positions
+            this.updateLeaderboard();
         }
+    }
+
+    checkCollision(rocket, ship) {
+        // simple AABB checking
+        return (rocket.x < ship.x + ship.width && 
+            rocket.x + rocket.width > ship.x && 
+            rocket.y < ship.y + ship.height &&
+            rocket.height + rocket.y > ship.y);
     }
 
     activateNextRocket() {
@@ -196,14 +357,13 @@ class Play extends Phaser.Scene {
 
         // Calculate winnings with multiplier
         let winnings = 0;
-        this.points -= this.wager;
+        this.points -= this.wager;  // Deduct wager first
 
         if (winningIndex === (this.selectedShip + 1)) { // If selected ship wins
-            winnings = this.wager * this.shipCount;
-            this.points += winnings;
-            winnings = winnings - this.wager;
+            winnings = this.wager * this.shipCount;  // Calculate total winnings
+            this.points += winnings;  // Add winnings to points
         } else {
-            winnings = -this.wager;
+            winnings = -this.wager;  // Just show the loss amount
         }
 
         // Check for game over conditions
@@ -219,20 +379,35 @@ class Play extends Phaser.Scene {
             this.add.text(
                 game.config.width/2,
                 game.config.height/2 + 32,
-                'Press SPACE to play again',
+                'Press SPACE to play again or C to continue',
                 victoryConfig
             ).setOrigin(0.5);
 
+            // Play race complete sound
+            if (this.raceCompleteSound) {
+                this.raceCompleteSound.play();
+            }
+
+            // Handle input for choices
             this.input.keyboard.once('keydown-SPACE', () => {
                 this.scene.start('menuScene');
             });
+
+            this.input.keyboard.once('keydown-C', () => {
+                this.scene.start('bettingScene', { 
+                    points: this.points,
+                    rocketSpeed: this.rocketSpeed,
+                    maxShots: this.maxShots 
+                });
+            });
+
             return;
         } 
         else if (this.points <= 0) {
             this.add.text(
                 game.config.width/2,
                 game.config.height/2 - 64,
-                'GAME OVER!\nYou\'ve run out of points!',
+                'GAME OVER!\nYou\'ve run out of $!',
                 victoryConfig
             ).setOrigin(0.5);
             
@@ -254,7 +429,7 @@ class Play extends Phaser.Scene {
         this.add.text(
             game.config.width/2,
             game.config.height/2,
-            `Ship ${winningIndex} Wins!\nYou ${winnings >= 0 ? 'won' : 'lost'} ${Math.abs(winnings)} points!`,
+            `Ship ${winningIndex} Wins!\nYou ${winnings >= 0 ? 'won' : 'lost'} $${Math.abs(winnings)}!`,
             victoryConfig
         ).setOrigin(0.5);
 
@@ -266,6 +441,11 @@ class Play extends Phaser.Scene {
             victoryConfig
         ).setOrigin(0.5);
 
+        // Play race complete sound
+        if (this.raceCompleteSound) {
+            this.raceCompleteSound.play();
+        }
+
         this.input.keyboard.once('keydown-SPACE', () => {
             this.scene.start('bettingScene', { 
                 points: this.points,
@@ -275,31 +455,55 @@ class Play extends Phaser.Scene {
         });
     }
 
-    checkCollision(rocket, ship) {
-        // simple AABB checking
-        if (rocket.x < ship.x + ship.width && 
-          rocket.x + rocket.width > ship.x && 
-          rocket.y < ship.y + ship.height &&
-          rocket.height + rocket.y > ship. y) {
-          return true
-        } else {
-          return false
-        }
-    }
+    resetRound() {
+        // Reset gameOver flag
+        this.gameOver = false;
 
-    shipExplode(ship) {
-        ship.alpha = 0;
-        ship.isExploding = true;
-        
-        let boom = this.add.sprite(ship.x + ship.width/2, ship.y + ship.height/2, 'explosion').setOrigin(0.5, 0.5);
-        boom.anims.play('explode');             
-        boom.on('animationcomplete', () => {    
-            ship.reset();                       
-            ship.alpha = 1;
-            ship.isExploding = false;
-            boom.destroy();                     
+        // Reset ships positions and laps
+        this.ships.forEach(ship => {
+            ship.reset();
+            ship.laps = 0;
         });
 
-        this.sound.play('sfx-explosion');
+        // Reset lap counters
+        this.lapCounters.forEach(lapText => {
+            lapText.setText('0');
+        });
+
+        // Reset rockets
+        this.rockets.forEach(rocket => rocket.reset());
+
+        // Reactivate the first rocket
+        this.currentRocketIndex = 0;
+        this.rockets[this.currentRocketIndex].setActive(true);
+
+        // Remove victory texts
+        this.children.list.forEach(child => {
+            if (child instanceof Phaser.GameObjects.Text && 
+                (child.text.includes('CONGRATULATIONS') || child.text.includes('GAME OVER'))) {
+                child.destroy();
+            }
+        });
+    }
+
+    updateLeaderboard() {
+        let sortedShips = this.ships.map((ship, index) => ({
+            ship: ship,
+            index: index,
+            progress: (ship.laps * game.config.width) + (game.config.width - ship.x)
+        })).sort((a, b) => b.progress - a.progress);
+
+        sortedShips.forEach((shipData, newRank) => {
+            let display = this.positionDisplays[shipData.index];
+            let yPos = this.UI_CONFIG.leaderboard.y + borderUISize * 3 + (newRank * this.UI_CONFIG.leaderboard.spacing);
+            
+            // Update positions and highlight - increased opacity to 0.6
+            display.highlight.y = yPos;
+            display.highlight.alpha = shipData.index === this.selectedShip ? 0.6 : 0;
+            display.lapDisplay.setText(`${shipData.ship.laps} LAP${shipData.ship.laps !== 1 ? 'S' : ''}`);
+            display.lapDisplay.y = yPos;
+            display.ship.y = yPos;
+            display.rank = newRank;
+        });
     }
 }
