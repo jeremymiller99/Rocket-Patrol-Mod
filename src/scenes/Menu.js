@@ -82,7 +82,7 @@ class Menu extends Phaser.Scene {
         
         // Add mouse interactivity to the play text
         let playText = this.add.text(game.config.width/2, game.config.height/2 + borderUISize*2, 
-            'Press SPACE to Start', menuConfig).setOrigin(0.5);
+            'Press SPACE to Start', playConfig).setOrigin(0.5);
 
         // Make text interactive
         playText.setInteractive({ useHandCursor: true })
