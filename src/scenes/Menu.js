@@ -80,12 +80,28 @@ class Menu extends Phaser.Scene {
         // Add flashing subtitle
         let subtitle = this.add.text(game.config.width/2, game.config.height/2 + 15, '$100 ➜ $1000 EASY!', subtitleConfig).setOrigin(0.5);
         
-        // Add play button with glow effect
-        let playButton = this.add.text(game.config.width/2, game.config.height * 0.7, 'INSERT COIN\n(PRESS SPACE)', playConfig)
-            .setOrigin(0.5)
-            .setInteractive()
+        // Add mouse interactivity to the play text
+        let playText = this.add.text(game.config.width/2, game.config.height/2 + borderUISize*2, 
+            'Press SPACE to Start', menuConfig).setOrigin(0.5);
+
+        // Make text interactive
+        playText.setInteractive({ useHandCursor: true })
             .on('pointerover', () => {
+                playText.setBackgroundColor('#FFFF00');
                 this.highlightSound.play();
+            })
+            .on('pointerout', () => {
+                playText.setBackgroundColor('#F3B141');
+            })
+            .on('pointerdown', () => {
+                this.selectSound.play();
+                this.time.delayedCall(200, () => {
+                    this.scene.start('bettingScene', {
+                        points: 100,
+                        rocketSpeed: 2,
+                        maxShots: 1
+                    });
+                });
             });
 
         // Add animations

@@ -100,6 +100,26 @@ class Betting extends Phaser.Scene {
             this.shipCountOptions.push(option);
         }
 
+        // Add mouse interactivity to ship count options
+        this.shipCountOptions.forEach((option, index) => {
+            option.setInteractive({ useHandCursor: true })
+                .on('pointerover', () => {
+                    this.currentSelection = index;
+                    this.highlightSound.play();
+                    this.updateSelection();
+                })
+                .on('pointerdown', () => {
+                    if (this.state === 'shipCount') {
+                        this.selectSound.play();
+                        this.selectedShipCount = index + 2;
+                        this.state = 'shipSelect';
+                        this.currentSelection = 0;
+                        this.currentInstructions.setText('Select your ship');
+                        this.updateSelection();
+                    }
+                });
+        });
+
         // Initialize ships
         this.showAllShips();
         
@@ -109,9 +129,25 @@ class Betting extends Phaser.Scene {
         this.updateSelection();
 
         // Points display at bottom-center
-        this.add.text(game.config.width/2, game.config.height - borderUISize, 
-            `S for Shop`, {...headerConfig, backgroundColor: '#00FF00', color: '#000000'}).setOrigin(0.5, 0);
-            
+        let shopButton = this.add.text(game.config.width/2, game.config.height - borderUISize, 
+            `S for Shop`, {...headerConfig, backgroundColor: '#00FF00', color: '#000000'})
+            .setOrigin(0.5, 0)
+            .setInteractive({ useHandCursor: true })
+            .on('pointerover', () => {
+                shopButton.setBackgroundColor('#FFFF00');
+                this.highlightSound.play();
+            })
+            .on('pointerout', () => {
+                shopButton.setBackgroundColor('#00FF00');
+            })
+            .on('pointerdown', () => {
+                this.selectSound.play();
+                this.scene.start('shopScene', {
+                    points: this.points,
+                    rocketSpeed: this.rocketSpeed,
+                    maxShots: this.maxShots
+                });
+            });
 
         // Define keys
         keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
@@ -124,6 +160,26 @@ class Betting extends Phaser.Scene {
 
         // Add number key listeners for betting
         this.input.keyboard.on('keydown', this.handleWagerInput, this);
+
+        // Add mouse interactivity to ships
+        this.shipSprites.forEach((ship, index) => {
+            ship.setInteractive({ useHandCursor: true })
+                .on('pointerover', () => {
+                    if (this.state === 'shipSelect' && index < this.selectedShipCount) {
+                        this.currentSelection = index;
+                        this.highlightSound.play();
+                        this.updateSelection();
+                    }
+                })
+                .on('pointerdown', () => {
+                    if (this.state === 'shipSelect' && index < this.selectedShipCount) {
+                        this.selectSound.play();
+                        this.selectedShip = index;
+                        this.state = 'wager';
+                        this.showWagerOptions();
+                    }
+                });
+        });
     }
 
     handleWagerInput(event) {

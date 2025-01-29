@@ -93,13 +93,22 @@ class Play extends Phaser.Scene {
             borderUISize*5 + borderPadding*2,
             borderUISize*6 + borderPadding*4,
             borderUISize*7 + borderPadding*6,
-            borderUISize*8 + borderPadding*8,  // Added fifth lane
+            borderUISize*8 + borderPadding*8,
         ];
+
+        // Create array of colors in the same order as the betting screen
+        let shipColors = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF];
+
+        // Create array of indices and shuffle it
+        let indices = Array.from({length: this.shipCount}, (_, i) => i);
+        indices = shuffleArray(indices);
 
         // Add ships
         for(let i = 0; i < this.shipCount; i++) {
             // Generate random speed between 2 and 4
             let randomSpeed = Math.random() * 2 + 2;
+            let colorIndex = indices[i];  // Use shuffled index
+            
             this.ships.push(new Spaceship(
                 this,
                 game.config.width + borderUISize*6,
@@ -107,26 +116,13 @@ class Play extends Phaser.Scene {
                 'spaceship',
                 0,
                 30,
-                randomSpeed  // Use random speed instead of i + 1
+                randomSpeed
             ).setOrigin(0, 0));
-            // Add color tint to ships - match betting screen colors
-            switch(i) {
-                case 0: // Red
-                    this.ships[i].setTint(0xFF0000);
-                    break;
-                case 1: // Green
-                    this.ships[i].setTint(0x00FF00);
-                    break;
-                case 2: // Blue
-                    this.ships[i].setTint(0x0000FF);
-                    break;
-                case 3: // Yellow
-                    this.ships[i].setTint(0xFFFF00);
-                    break;
-                case 4: // Pink
-                    this.ships[i].setTint(0xFF00FF);
-                    break;
-            }
+            
+            // Set the ship's color using the shuffled index
+            this.ships[i].setTint(shipColors[colorIndex]);
+            // Store the color index for reference
+            this.ships[i].colorIndex = colorIndex;
         }
 
         // Add rockets
@@ -489,7 +485,7 @@ class Play extends Phaser.Scene {
     updateLeaderboard() {
         let sortedShips = this.ships.map((ship, index) => ({
             ship: ship,
-            index: index,
+            index: ship.colorIndex,  // Use colorIndex instead of array index
             progress: (ship.laps * game.config.width) + (game.config.width - ship.x)
         })).sort((a, b) => b.progress - a.progress);
 
@@ -497,7 +493,6 @@ class Play extends Phaser.Scene {
             let display = this.positionDisplays[shipData.index];
             let yPos = this.UI_CONFIG.leaderboard.y + borderUISize * 3 + (newRank * this.UI_CONFIG.leaderboard.spacing);
             
-            // Update positions and highlight - increased opacity to 0.6
             display.highlight.y = yPos;
             display.highlight.alpha = shipData.index === this.selectedShip ? 0.6 : 0;
             display.lapDisplay.setText(`${shipData.ship.laps} LAP${shipData.ship.laps !== 1 ? 'S' : ''}`);
@@ -506,4 +501,13 @@ class Play extends Phaser.Scene {
             display.rank = newRank;
         });
     }
+}
+
+// Add this function after the class declaration but before any other methods
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
 }

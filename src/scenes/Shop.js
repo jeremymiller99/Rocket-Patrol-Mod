@@ -50,12 +50,50 @@ class Shop extends Phaser.Scene {
         // Speed upgrade option
         menuConfig.backgroundColor = '#00FF00';
         this.speedText = this.add.text(game.config.width/2, game.config.height/2 - borderUISize*2, 
-            `Speed Upgrade ($${this.speedCost})\nCurrent: ${this.rocketSpeed}`, menuConfig).setOrigin(0.5);
+            `Speed Upgrade ($${this.speedCost})\nCurrent: ${this.rocketSpeed}`, menuConfig)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .on('pointerover', () => {
+                this.currentSelection = 0;
+                this.highlightSound.play();
+                this.updateSelection();
+            })
+            .on('pointerdown', () => {
+                if(this.points >= this.speedCost && (this.points - this.speedCost) > 0) {
+                    this.selectSound.play();
+                    this.points -= this.speedCost;
+                    this.rocketSpeed += 0.5;
+                    this.scene.restart({ 
+                        points: this.points, 
+                        rocketSpeed: this.rocketSpeed, 
+                        maxShots: this.maxShots 
+                    });
+                }
+            });
 
-        // Shot count upgrade option (only show if not maxed)
+        // Shot count upgrade option
         if (this.maxShots < 4) {
             this.shotText = this.add.text(game.config.width/2, game.config.height/2, 
-                `Shot Count Upgrade ($${this.shotCost})\nCurrent: ${this.maxShots}`, menuConfig).setOrigin(0.5);
+                `Shot Count Upgrade ($${this.shotCost})\nCurrent: ${this.maxShots}`, menuConfig)
+                .setOrigin(0.5)
+                .setInteractive({ useHandCursor: true })
+                .on('pointerover', () => {
+                    this.currentSelection = 1;
+                    this.highlightSound.play();
+                    this.updateSelection();
+                })
+                .on('pointerdown', () => {
+                    if(this.maxShots < 4 && this.points >= this.shotCost && (this.points - this.shotCost) > 0) {
+                        this.selectSound.play();
+                        this.points -= this.shotCost;
+                        this.maxShots += 1;
+                        this.scene.restart({ 
+                            points: this.points, 
+                            rocketSpeed: this.rocketSpeed, 
+                            maxShots: this.maxShots 
+                        });
+                    }
+                });
         } else {
             this.shotText = this.add.text(game.config.width/2, game.config.height/2, 
                 'Maximum Rocket Count Reached! (4)', menuConfig).setOrigin(0.5);
@@ -64,14 +102,27 @@ class Shop extends Phaser.Scene {
         // Back to betting option
         menuConfig.backgroundColor = '#F3B141';
         this.backText = this.add.text(game.config.width/2, game.config.height/2 + borderUISize*2, 
-            'Return to Betting', menuConfig).setOrigin(0.5);
+            'Return to Betting', menuConfig)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .on('pointerover', () => {
+                this.currentSelection = 2;
+                this.highlightSound.play();
+                this.updateSelection();
+            })
+            .on('pointerdown', () => {
+                this.selectSound.play();
+                this.scene.start('bettingScene', { 
+                    points: this.points,
+                    rocketSpeed: this.rocketSpeed,
+                    maxShots: this.maxShots 
+                });
+            });
 
-        // Define keys
+        // Define keys for keyboard controls
         keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
         keyRIGHT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
         keySPACE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-
-        // Add up/down keys
         keyUP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
         keyDOWN = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
 
