@@ -81,7 +81,7 @@ class Menu extends Phaser.Scene {
         let subtitle = this.add.text(game.config.width/2, game.config.height/2 + 15, '$100 ➜ $1000 EASY!', subtitleConfig).setOrigin(0.5);
         
         // Add mouse interactivity to the play text
-        let playText = this.add.text(game.config.width/2, game.config.height/2 + borderUISize*2, 
+        let playText = this.add.text(game.config.width/2, game.config.height/2 + borderUISize*2 + 30, 
             'Press SPACE to Start', playConfig).setOrigin(0.5);
 
         // Make text interactive

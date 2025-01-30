@@ -339,7 +339,7 @@ class Play extends Phaser.Scene {
         
         // Find winning ship (first to complete 3 laps)
         let winner = this.ships.find(ship => ship.laps >= 3);
-        let winningIndex = this.ships.indexOf(winner) + 1;
+        let winningIndex = winner.colorIndex;  // Use colorIndex instead of array index
 
         let victoryConfig = {
             fontFamily: 'Courier',
@@ -355,11 +355,14 @@ class Play extends Phaser.Scene {
         let winnings = 0;
         this.points -= this.wager;  // Deduct wager first
 
-        if (winningIndex === (this.selectedShip + 1)) { // If selected ship wins
-            winnings = this.wager * this.shipCount;  // Calculate total winnings
-            this.points += winnings;  // Add winnings to points
+        if (winningIndex === this.selectedShip) {  // Compare colorIndex with selectedShip
+            // Player won - multiply wager by number of ships
+            winnings = this.wager * this.shipCount;
+            this.points += winnings;
         } else {
-            winnings = -this.wager;  // Just show the loss amount
+            // Player lost - lose wager amount
+            winnings = -this.wager;
+            this.points += winnings;
         }
 
         // Check for game over conditions
@@ -375,7 +378,7 @@ class Play extends Phaser.Scene {
             this.add.text(
                 game.config.width/2,
                 game.config.height/2 + 32,
-                'Press SPACE to play again or C to continue',
+                'C to continue or SPACE to restart',
                 victoryConfig
             ).setOrigin(0.5);
 
@@ -411,9 +414,13 @@ class Play extends Phaser.Scene {
             this.add.text(
                 game.config.width/2,
                 game.config.height/2 + 32,
-                'Press SPACE to try again',
+                'Click Here to continue',
                 victoryConfig
-            ).setOrigin(0.5);
+            ).setOrigin(0.5)
+                .setInteractive({ useHandCursor: true })
+                .on('pointerdown', () => {
+                    this.scene.start('menuScene');
+                });
 
             this.input.keyboard.once('keydown-SPACE', () => {
                 this.scene.start('menuScene');
@@ -425,30 +432,30 @@ class Play extends Phaser.Scene {
         this.add.text(
             game.config.width/2,
             game.config.height/2,
-            `Ship ${winningIndex} Wins!\nYou ${winnings >= 0 ? 'won' : 'lost'} $${Math.abs(winnings)}!`,
+            `Ship ${winningIndex + 1} Wins!\nYou ${winnings >= 0 ? 'won' : 'lost'} $${Math.abs(winnings)}!`,
             victoryConfig
         ).setOrigin(0.5);
 
         victoryConfig.fontSize = '24px';
-        this.add.text(
+        let continueText = this.add.text(
             game.config.width/2,
             game.config.height/2 + 64,
             'Press SPACE to continue',
             victoryConfig
-        ).setOrigin(0.5);
+        ).setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => {
+                this.scene.start('bettingScene', { 
+                    points: this.points,
+                    rocketSpeed: this.rocketSpeed,
+                    maxShots: this.maxShots 
+                });
+            });
 
         // Play race complete sound
         if (this.raceCompleteSound) {
             this.raceCompleteSound.play();
         }
-
-        this.input.keyboard.once('keydown-SPACE', () => {
-            this.scene.start('bettingScene', { 
-                points: this.points,
-                rocketSpeed: this.rocketSpeed,
-                maxShots: this.maxShots 
-            });
-        });
     }
 
     resetRound() {
